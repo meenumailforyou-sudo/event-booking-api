@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../db');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const router = express.Router();
 
 // Column names are renamed so the frontend keeps working unchanged
@@ -20,7 +21,7 @@ router.get('/:id', async (req, res) => {
   res.json(rows[0]);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, requireRole('organizer', 'admin'), async (req, res) => {
   const { title, location, date, totalSeats, price } = req.body;
   if (!title || !date || !totalSeats) {
     return res.status(400).json({ message: 'title, date and totalSeats are required' });
@@ -33,7 +34,7 @@ router.post('/', async (req, res) => {
   res.status(201).json(rows[0]);
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, requireRole('organizer', 'admin'), async (req, res) => {
   const { title, location, date, price } = req.body;
   const { rows } = await pool.query(
     `UPDATE events SET
@@ -48,10 +49,11 @@ router.put('/:id', async (req, res) => {
   res.json(rows[0]);
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, requireRole('organizer', 'admin'), async (req, res) => {
   const { rowCount } = await pool.query('DELETE FROM events WHERE id = $1', [req.params.id]);
   if (rowCount === 0) return res.status(404).json({ message: 'Event not found' });
   res.status(204).send();
 });
 
 module.exports = router;
+
